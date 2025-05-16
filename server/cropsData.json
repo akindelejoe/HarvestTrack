@@ -1,0 +1,50 @@
+[
+  {
+    "type": "maize",
+    "location": "ohio",
+    "plantingDate": "2025-4-30",
+    "harvestDate": "2025-08-18T05:00:00.000Z"
+  },
+  {
+    "type": "maize",
+    "location": "3",
+    "plantingDate": "2025-7-2",
+    "harvestDate": "2025-10-20T05:00:00.000Z"
+  },
+  {
+    "type": "maize",
+    "location": "Texas",
+    "plantingDate": "2025-9-19",
+    "harvestDate": null
+  },
+  {
+    "type": "maize",
+    "location": "texas",
+    "plantingDate": "2035-7-19",
+    "harvestDate": "2035-11-06T06:00:00.000Z"
+  },
+  {
+    "type": "maize",
+    "location": "texas",
+    "plantingDate": "2025-4-23",
+    "harvestDate": "2025-08-11T05:00:00.000Z"
+  },
+  {
+    "type": "maize",
+    "location": "ohio",
+    "plantingDate": "2024-12-01",
+    "harvestDate": "2025-03-20T23:00:00.000Z"
+  },
+  {
+    "type": "maize",
+    "location": "ohio",
+    "plantingDate": "2024-12-01",
+    "harvestDate": "2025-03-20T23:00:00.000Z"
+  },
+  {
+    "type": "maize",
+    "location": "ohio",
+    "plantingDate": "2024-12-01",
+    "harvestDate": "2025-03-20T23:00:00.000Z"
+  }
+]
