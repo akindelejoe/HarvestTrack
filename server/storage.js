@@ -13,4 +13,3 @@ function saveCrops(crops) {
 
 module.exports = { loadCrops, saveCrops };
 
-4

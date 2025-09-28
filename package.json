@@ -1,0 +1,16 @@
+{
+  "scripts": {
+    "start": "node server/index.js",
+    "cli": "node bin/cli.js",
+    "dev": "nodemon server/index.js"
+  },
+  "dependencies": {
+    "cors": "^2",
+    "dotenv": "^16",
+    "express": "^4",
+    "mongoose": "^8"
+  },
+  "devDependencies": {
+    "nodemon": "^3"
+  }
+}
