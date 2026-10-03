@@ -1,0 +1,15 @@
+# Build context is the repo root (npm workspaces share one lockfile).
+**/node_modules
+**/dist
+**/coverage
+**/.env
+**/.env.*
+!**/.env.example
+**/*.log
+.git
+.github
+legacy
+server/.pgdata
+docker-compose*.yml
+**/Dockerfile
+README.md

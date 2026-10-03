@@ -1,0 +1,245 @@
+// HarvestTrack relational schema
+// users 1→* farms 1→* fields 1→* plantings 1→0..1 harvests
+// crop_types 1→* plantings, plantings 1→* alerts, farms 1→* weather_snapshots
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum PlantingStatus {
+  ACTIVE
+  HARVESTED
+  FAILED
+}
+
+enum AlertSeverity {
+  LOW
+  MODERATE
+  HIGH
+}
+
+enum AlertType {
+  FROST
+  EXTREME_HEAT
+  HEAVY_RAIN
+  STRONG_WIND
+  DROUGHT
+}
+
+enum HarvestUnit {
+  KG
+  LB
+  TONS
+  BUSHELS
+  CRATES
+}
+
+enum CropQuality {
+  EXCELLENT
+  GOOD
+  FAIR
+  POOR
+}
+
+enum ActivityType {
+  PLANTED
+  UPDATED
+  ALERT_RAISED
+  HARVESTED
+  NOTE
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @db.VarChar(120)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  farms                   Farm[]
+  alerts                  Alert[]
+  notificationPreferences NotificationPreference?
+
+  @@map("users")
+}
+
+model NotificationPreference {
+  id                 String        @id @default(uuid()) @db.Uuid
+  userId             String        @unique @map("user_id") @db.Uuid
+  phoneNumber        String?       @map("phone_number") @db.VarChar(20)
+  smsEnabled         Boolean       @default(false) @map("sms_enabled")
+  minimumSeverity    AlertSeverity @default(HIGH) @map("minimum_severity")
+  createdAt          DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt          DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_preferences")
+}
+
+model Farm {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  name      String   @db.VarChar(120)
+  location  String   @db.VarChar(200)
+  latitude  Decimal  @db.Decimal(8, 5)
+  longitude Decimal  @db.Decimal(8, 5)
+  timezone  String   @default("auto") @db.VarChar(64)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fields           Field[]
+  weatherSnapshots WeatherSnapshot[]
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("farms")
+}
+
+model Field {
+  id        String   @id @default(uuid()) @db.Uuid
+  farmId    String   @map("farm_id") @db.Uuid
+  name      String   @db.VarChar(120)
+  areaAcres Decimal? @map("area_acres") @db.Decimal(10, 2)
+  soilType  String?  @map("soil_type") @db.VarChar(60)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  farm      Farm       @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  plantings Planting[]
+
+  @@unique([farmId, name])
+  @@index([farmId])
+  @@map("fields")
+}
+
+/// Crop knowledge table — general agronomic ranges used for estimates & hazard thresholds.
+model CropType {
+  id                   String   @id @default(uuid()) @db.Uuid
+  name                 String   @unique @db.VarChar(80)
+  minDaysToHarvest     Int      @map("minimum_days_to_harvest")
+  maxDaysToHarvest     Int      @map("maximum_days_to_harvest")
+  idealTempMinC        Decimal  @map("ideal_temperature_min") @db.Decimal(4, 1)
+  idealTempMaxC        Decimal  @map("ideal_temperature_max") @db.Decimal(4, 1)
+  frostSensitive       Boolean  @default(false) @map("frost_sensitive")
+  excessRainSensitive  Boolean  @default(false) @map("excess_rain_sensitive")
+  droughtSensitive     Boolean  @default(false) @map("drought_sensitive")
+  windSensitive        Boolean  @default(false) @map("wind_sensitive")
+  notes                String?
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt            DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  plantings Planting[]
+
+  @@map("crop_types")
+}
+
+model Planting {
+  id                     String         @id @default(uuid()) @db.Uuid
+  fieldId                String         @map("field_id") @db.Uuid
+  cropTypeId             String         @map("crop_type_id") @db.Uuid
+  variety                String?        @db.VarChar(120)
+  plotLocation           String?        @map("plot_location") @db.VarChar(160)
+  plantingDate           DateTime       @map("planting_date") @db.Date
+  estimatedHarvestStart  DateTime       @map("estimated_harvest_start") @db.Date
+  estimatedHarvestEnd    DateTime       @map("estimated_harvest_end") @db.Date
+  status                 PlantingStatus @default(ACTIVE)
+  notes                  String?
+  createdAt              DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt              DateTime       @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  field      Field              @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  cropType   CropType           @relation(fields: [cropTypeId], references: [id], onDelete: Restrict)
+  harvest    Harvest?
+  alerts     Alert[]
+  activities PlantingActivity[]
+
+  @@index([fieldId])
+  @@index([cropTypeId])
+  @@index([status, estimatedHarvestStart])
+  @@map("plantings")
+}
+
+model Harvest {
+  id                String      @id @default(uuid()) @db.Uuid
+  plantingId        String      @unique @map("planting_id") @db.Uuid
+  actualHarvestDate DateTime    @map("actual_harvest_date") @db.Date
+  quantity          Decimal     @db.Decimal(12, 2)
+  unit              HarvestUnit
+  quality           CropQuality
+  notes             String?
+  createdAt         DateTime    @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime    @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  planting Planting @relation(fields: [plantingId], references: [id], onDelete: Cascade)
+
+  @@index([actualHarvestDate])
+  @@map("harvests")
+}
+
+/// Cached provider response per farm; doubles as a historical weather log.
+model WeatherSnapshot {
+  id           String   @id @default(uuid()) @db.Uuid
+  farmId       String   @map("farm_id") @db.Uuid
+  provider     String   @db.VarChar(40)
+  temperatureC Decimal  @map("temperature_c") @db.Decimal(5, 1)
+  humidity     Int
+  windSpeedKph Decimal  @map("wind_speed_kph") @db.Decimal(5, 1)
+  condition    String   @db.VarChar(80)
+  forecast     Json
+  fetchedAt    DateTime @default(now()) @map("fetched_at") @db.Timestamptz(3)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  farm Farm @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([farmId, fetchedAt(sort: Desc)])
+  @@map("weather_snapshots")
+}
+
+model Alert {
+  id             String        @id @default(uuid()) @db.Uuid
+  userId         String        @map("user_id") @db.Uuid
+  plantingId     String?       @map("planting_id") @db.Uuid
+  alertType      AlertType     @map("alert_type")
+  severity       AlertSeverity
+  title          String        @db.VarChar(160)
+  message        String
+  impact         String?
+  recommendation String
+  forecastDate   DateTime      @map("forecast_date") @db.Date
+  /// Prevents the same hazard being raised twice for a planting/day.
+  dedupeKey      String        @unique @map("dedupe_key") @db.VarChar(200)
+  smsSent        Boolean       @default(false) @map("sms_sent")
+  readAt         DateTime?     @map("read_at") @db.Timestamptz(3)
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planting Planting? @relation(fields: [plantingId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, readAt])
+  @@index([plantingId])
+  @@map("alerts")
+}
+
+model PlantingActivity {
+  id          String       @id @default(uuid()) @db.Uuid
+  plantingId  String       @map("planting_id") @db.Uuid
+  type        ActivityType
+  description String
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  planting Planting @relation(fields: [plantingId], references: [id], onDelete: Cascade)
+
+  @@index([plantingId, createdAt])
+  @@map("planting_activities")
+}

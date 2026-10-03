@@ -1,16 +1,25 @@
 {
+  "name": "harvesttrack",
+  "version": "1.0.0",
+  "private": true,
+  "description": "HarvestTrack — crop lifecycle, harvest forecasting and weather-risk platform",
+  "workspaces": [
+    "server",
+    "client"
+  ],
   "scripts": {
-    "start": "node server/index.js",
-    "cli": "node bin/cli.js",
-    "dev": "nodemon server/index.js"
-  },
-  "dependencies": {
-    "cors": "^2",
-    "dotenv": "^16",
-    "express": "^4",
-    "mongoose": "^8"
+    "db:local": "npm run db:local -w server",
+    "db:setup": "npm run db:migrate -w server && npm run db:seed -w server",
+    "dev": "concurrently -n server,client -c blue,yellow \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w server && npm run build -w client",
+    "test": "npm test -w server",
+    "typecheck": "npm run typecheck -w server && npm run typecheck -w client",
+    "legacy:cli": "node legacy/bin/cli.js"
   },
   "devDependencies": {
-    "nodemon": "^3"
+    "concurrently": "^9.2.4"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
