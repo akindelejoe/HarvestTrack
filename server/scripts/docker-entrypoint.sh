@@ -1,5 +1,5 @@
 #!/bin/sh
-# Container start-up: wait for PostgreSQL, apply pending migrations, ensure the crop
+# Start-up for Docker and single-service hosts (e.g. Railway): wait for PostgreSQL, apply pending migrations, ensure the crop
 # catalogue exists, optionally add demo data to an EMPTY database, then start the API.
 # Nothing here resets or deletes existing data.
 set -e
@@ -20,10 +20,17 @@ done
 echo "[entrypoint] Upserting crop knowledge catalogue…"
 npx --no-install tsx prisma/seed.ts --catalog-only
 
-if [ "${SEED_DEMO_DATA:-false}" = "true" ]; then
-  echo "[entrypoint] SEED_DEMO_DATA=true — adding demo account if the database has no users…"
-  npx --no-install tsx prisma/seed.ts --if-empty
-fi
+case "${SEED_DEMO_DATA:-false}" in
+  true)
+    echo "[entrypoint] SEED_DEMO_DATA=true — adding demo account if the database has no users…"
+    npx --no-install tsx prisma/seed.ts --if-empty
+    ;;
+  refresh)
+    # Public demo deployments: rebuild ONLY the demo account so its dates stay current.
+    echo "[entrypoint] SEED_DEMO_DATA=refresh — recreating the demo account (other users untouched)…"
+    npx --no-install tsx prisma/seed.ts
+    ;;
+esac
 
 echo "[entrypoint] Starting HarvestTrack API"
 exec "$@"

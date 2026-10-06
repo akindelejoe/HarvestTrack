@@ -2,7 +2,7 @@
   "name": "harvesttrack",
   "version": "1.0.0",
   "private": true,
-  "description": "HarvestTrack — crop lifecycle, harvest forecasting and weather-risk platform",
+  "description": "HarvestTrack \u2014 crop lifecycle, harvest forecasting and weather-risk platform",
   "workspaces": [
     "server",
     "client"
@@ -14,12 +14,13 @@
     "build": "npm run build -w server && npm run build -w client",
     "test": "npm test -w server",
     "typecheck": "npm run typecheck -w server && npm run typecheck -w client",
-    "legacy:cli": "node legacy/bin/cli.js"
+    "legacy:cli": "node legacy/bin/cli.js",
+    "start:prod": "cd server && sh scripts/docker-entrypoint.sh node dist/index.js"
   },
   "devDependencies": {
     "concurrently": "^9.2.4"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=20 <25"
   }
 }

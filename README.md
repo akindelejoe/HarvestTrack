@@ -20,6 +20,7 @@ Record planting → Estimate harvest window → Monitor forecast → Detect haza
 - [Database schema](#database-schema)
 - [Quick start (Docker)](#quick-start-docker)
 - [Local development (without Docker)](#local-development-without-docker)
+- [Production deployment (Railway)](#production-deployment-railway)
 - [Environment variables](#environment-variables)
 - [How harvest estimation works](#how-harvest-estimation-works)
 - [How weather alerts work](#how-weather-alerts-work)
@@ -280,7 +281,34 @@ PostgreSQL stores its files in the named volume **`harvesttrack_postgres_data`**
 docker compose down -v      # ⚠️ -v deletes the database volume
 ```
 
-### Environment variables in Docker
+### Production deployment (Railway)
+
+Production runs as **one Railway service plus Railway PostgreSQL**. Express serves both the API and the built React app from the same origin, so there's no CORS setup and no API URL to configure.
+
+| | |
+|---|---|
+| Config | [`railway.json`](railway.json) |
+| Build | `npm run build` (Prisma generate + API compile + Vite build) |
+| Start | `npm run start:prod`: migrations → crop catalogue → demo account refresh → API |
+| Health check | `GET /api/health` |
+| Branch | **`main` only**. `develop` is never auto-deployed. |
+
+**Service variables** (set in Railway, never committed):
+- `DATABASE_URL=${{Postgres.DATABASE_URL}}`
+- `JWT_SECRET`
+- `NODE_ENV=production`
+- `CLIENT_ORIGIN=https://<domain>`
+- `SEED_DEMO_DATA=refresh`. This rebuilds only the public demo account on each start, so its dates stay current and visitors can't permanently alter it.
+- optionally the Twilio variables.
+
+## Branches
+
+- `main`: stable production code, deployed automatically to the public site.
+- `develop`: ongoing V2 work. Merge into `main` to release.
+
+---
+
+## Environment variables in Docker
 
 Compose reads the root **`.env`** (copied from [`.env.example`](.env.example)) and passes values into the containers. `docker-compose.yml` builds `DATABASE_URL` from `POSTGRES_USER`, `POSTGRES_PASSWORD` and `POSTGRES_DB`. It refuses to start if `POSTGRES_PASSWORD` or `JWT_SECRET` is missing. `.env` is git-ignored and excluded from images by `.dockerignore`, so secrets never end up in source control or image layers.
 
